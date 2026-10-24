@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Afrina Internet Cafe — Management</title>
+<style>
+:root{--blue:#1459c7;--navy:#12336b;--bg:#f3f6fc;--ink:#18243a;--muted:#65728a;--line:#dce4f0;--white:#fff;--green:#138451;--red:#c0392b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,"Noto Sans Bengali",sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,var(--navy),var(--blue));color:white;padding:20px 22px}
+.head{max-width:1200px;margin:auto;display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+h1{font-size:23px;margin:0 0 5px}header p{margin:0;color:#e0eaff;font-size:13px}
+main{max-width:1200px;margin:20px auto;padding:0 14px 40px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button,.btn{border:0;border-radius:9px;padding:10px 13px;background:var(--blue);color:white;font-weight:700;cursor:pointer}
+button.secondary{background:#e8eef9;color:var(--navy)}button.danger{background:var(--red)}button.green{background:var(--green)}
+button.active{background:var(--navy);outline:2px solid #9ec2ff}
+.panel{display:none}.panel.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card,.box{background:white;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 4px 14px #19396b08}
+.metric small{color:var(--muted)}.metric strong{display:block;font-size:25px;margin-top:8px}
+.box{margin-bottom:14px}.box h2{font-size:18px;margin:0 0 14px}
+.formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;border:1px solid #cdd8e8;border-radius:8px;padding:10px;font:inherit;background:white;color:var(--ink)}
+textarea{min-height:100px;resize:vertical}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);font-size:13px}th{background:#f4f7fc}
+.badge{display:inline-block;padding:4px 8px;border-radius:99px;background:#e8eef9;color:#244c91;font-size:12px}
+.note{color:var(--muted);font-size:13px;line-height:1.55}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#notice{position:sticky;top:8px;z-index:4;margin-bottom:10px;color:var(--green);font-weight:bold}
+#qrPreview{width:190px;max-width:100%;display:none;margin:12px auto;border:1px solid var(--line);border-radius:10px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:22px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.formgrid,.two{grid-template-columns:1fr}}
+@media(max-width:450px){h1{font-size:19px}.grid{grid-template-columns:1fr 1fr}.metric strong{font-size:21px}main{padding:0 9px 25px}}
+@media print{header,nav,.no-print,footer{display:none!important}body{background:white}main{margin:0;max-width:none}.panel{display:none!important}#jobs.panel.active,#payments.panel.active{display:block!important}.box,.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header><div class="head"><div><h1 id="brandTitle">AFRINA INTERNET CAFE</h1><p id="brandSub">Cyber Cafe & Online Service · Nowda, Murshidabad</p></div><button class="secondary no-print" onclick="exportData()">ডেটা Backup JSON</button></div></header>
+<main>
+<div id="notice" aria-live="polite"></div>
+<nav class="no-print">
+<button class="active" data-tab="dashboard">Dashboard</button><button data-tab="customers">কাস্টমার</button><button data-tab="jobs">কাজ / Job</button><button data-tab="payments">পেমেন্ট ও রসিদ</button><button data-tab="expenses">আয়-খরচ</button><button data-tab="ai">AI Assistant</button><button data-tab="settings">Settings</button>
+</nav>
+
+<section id="dashboard" class="panel active">
+<div class="grid">
+<div class="card metric"><small>মোট কাস্টমার</small><strong id="mCustomers">0</strong></div>
+<div class="card metric"><small>মোট Job</small><strong id="mJobs">0</strong></div>
+<div class="card metric"><small>মোট আয় (রেকর্ড)</small><strong id="mIncome">₹0</strong></div>
+<div class="card metric"><small>বকেয়া</small><strong id="mDue">₹0</strong></div>
+</div>
+<div class="box" style="margin-top:14px"><h2>সাম্প্রতিক কাজ</h2><div class="tablewrap"><table><thead><tr><th>তারিখ</th><th>কাস্টমার</th><th>কাজ</th><th>স্ট্যাটাস</th><th>বকেয়া</th></tr></thead><tbody id="recentJobs"></tbody></table></div><p class="note">এই ডেটা এই ব্রাউজারের Local Storage-এ থাকে। নিয়মিত Backup JSON ডাউনলোড করে রাখুন।</p></div>
+</section>
+
+<section id="customers" class="panel">
+<div class="box"><h2>নতুন কাস্টমার যোগ করুন</h2><form id="customerForm"><div class="formgrid">
+<div><label>কাস্টমারের নাম *</label><input name="name" required></div><div><label>ফোন</label><input name="phone" inputmode="tel"></div><div><label>ঠিকানা / নোট</label><input name="note"></div>
+</div><div class="actions"><button>কাস্টমার Save</button></div></form></div>
+<div class="box"><h2>কাস্টমার তালিকা</h2><input id="customerSearch" placeholder="নাম বা ফোন দিয়ে সার্চ করুন"><div class="tablewrap"><table><thead><tr><th>নাম</th><th>ফোন</th><th>ঠিকানা / নোট</th><th>Action</th></tr></thead><tbody id="customerRows"></tbody></table></div></div>
+</section>
+
+<section id="jobs" class="panel">
+<div class="box"><h2>নতুন কাজ / Job Entry</h2><form id="jobForm"><div class="formgrid">
+<div><label>কাস্টমার *</label><select name="customerId" id="jobCustomer" required></select></div>
+<div><label>কাজের বিবরণ *</label><input name="title" placeholder="যেমন: Online Form / Print" required></div>
+<div><label>মোট চার্জ (₹) *</label><input name="total" type="number" min="0" step=".01" required></div>
+<div><label>এখন পেমেন্ট (₹)</label><input name="paid" type="number" min="0" step=".01" value="0"></div>
+<div><label>স্ট্যাটাস</label><select name="status"><option>Pending</option><option>Working</option><option>Completed</option><option>Delivered</option></select></div>
+<div><label>শেষ তারিখ / নোট</label><input name="note" placeholder="ঐচ্ছিক"></div>
+</div><div class="actions"><button>Job Save</button></div></form></div>
+<div class="box"><h2>সব Job</h2><input id="jobSearch" placeholder="কাস্টমার / কাজ দিয়ে সার্চ"><div class="tablewrap"><table><thead><tr><th>তারিখ</th><th>কাস্টমার</th><th>কাজ</th><th>মোট</th><th>পেইড</th><th>বকেয়া</th><th>স্ট্যাটাস</th><th>Action</th></tr></thead><tbody id="jobRows"></tbody></table></div></div>
+</section>
+
+<section id="payments" class="panel">
+<div class="two">
+<div class="box"><h2>বকেয়া পেমেন্ট আদায়</h2><form id="paymentForm"><div><label>Job নির্বাচন</label><select id="paymentJob" name="jobId" required></select></div><div style="margin-top:10px"><label>আদায়ের পরিমাণ (₹)</label><input name="amount" type="number" min=".01" step=".01" required></div><div style="margin-top:10px"><label>পেমেন্ট মাধ্যম</label><select name="method"><option>Cash</option><option>UPI</option><option>PhonePe</option><option>Bank</option><option>Other</option></select></div><div class="actions"><button class="green">পেমেন্ট Save</button></div></form></div>
+<div class="box"><h2>দোকানের QR Payment</h2><p class="note">Project folder-এ QR.jpeg রাখুন। QR না দেখালে Settings থেকে ছবি নির্বাচন করুন।</p><img id="qrPreview" alt="দোকানের পেমেন্ট QR"><div class="actions no-print"><label class="btn" for="qrFile">QR ছবি নির্বাচন</label><input id="qrFile" type="file" accept="image/*" style="display:none"></div><p id="upiLabel"></p></div>
+</div>
+<div class="box"><h2>পেমেন্ট হিস্ট্রি</h2><div class="tablewrap"><table><thead><tr><th>তারিখ</th><th>কাস্টমার</th><th>Job</th><th>পরিমাণ</th><th>মাধ্যম</th><th>রসিদ</th></tr></thead><tbody id="paymentRows"></tbody></table></div><div class="actions no-print"><button onclick="printPayments()">Payment History Print</button></div></div>
+</section>
+
+<section id="expenses" class="panel">
+<div class="box"><h2>আয় / খরচ এন্ট্রি</h2><form id="expenseForm"><div class="formgrid">
+<div><label>ধরন</label><select name="type"><option value="income">আয়</option><option value="expense">খরচ</option></select></div>
+<div><label>বিবরণ *</label><input name="description" required placeholder="যেমন: কাগজ কেনা"></div><div><label>পরিমাণ (₹) *</label><input name="amount" type="number" min=".01" step=".01" required></div>
+</div><div class="actions"><button>হিসাব Save</button></div></form></div>
+<div class="box"><h2>হিসাবের তালিকা</h2><div class="tablewrap"><table><thead><tr><th>তারিখ</th><th>ধরন</th><th>বিবরণ</th><th>পরিমাণ</th><th>Action</th></tr></thead><tbody id="expenseRows"></tbody></table></div></div>
+</section>
+
+<section id="ai" class="panel">
+<div class="box"><h2>AFRINA AI Assistant</h2><p class="note">এটি এখন AI prompt তৈরি ও কপি করার স্থানীয় ডেমো। আসল AI উত্তর পেতে নিরাপদ Backend/API সংযোগ লাগবে। API Key সরাসরি HTML ফাইলে রাখবেন না।</p>
+<label>কী তৈরি করতে চান?</label><select id="aiTask"><option>Application Letter</option><option>Resume / Biodata</option><option>Advertisement</option><option>Customer Reply</option><option>বাংলা থেকে ইংরেজি</option><option>Online Form সহায়তা</option><option>Other</option></select>
+<label style="margin-top:10px">বিস্তারিত লিখুন</label><textarea id="aiPrompt" placeholder="যেমন: স্কুলে ছুটির আবেদন, কারণ..."></textarea>
+<div class="actions"><button onclick="makePrompt()">AI Prompt তৈরি</button><button class="secondary" onclick="copyPrompt()">Prompt কপি</button></div>
+<label style="margin-top:12px">তৈরি Prompt</label><textarea id="aiResult" readonly placeholder="এখানে AI prompt তৈরি হবে"></textarea>
+<p class="note">AI API Backend যুক্ত করার পর এই অংশ থেকেই আসল AI-কে অনুরোধ পাঠানো যাবে।</p></div>
+</section>
+
+<section id="settings" class="panel">
+<div class="box"><h2>Shop Settings</h2><form id="settingsForm"><div class="formgrid">
+<div><label>Shop Name</label><input name="shopName" id="sName" required></div><div><label>Owner</label><input name="owner" id="sOwner"></div><div><label>Phone</label><input name="phone" id="sPhone"></div><div><label>Address</label><input name="address" id="sAddress"></div><div><label>UPI ID</label><input name="upi" id="sUpi"></div>
+</div><div class="actions"><button>Settings Save</button><button type="button" class="secondary" onclick="document.getElementById('importFile').click()">Backup Import</button><input id="importFile" type="file" accept="application/json,.json" style="display:none"></div></form>
+<p class="note">QR.jpeg একই ফোল্ডারে রাখলে প্রথমে স্বয়ংক্রিয়ভাবে দেখানোর চেষ্টা হবে। প্রয়োজনে QR Payment ট্যাবে গিয়ে QR ছবি নির্বাচন করুন।</p></div>
+<div class="box"><h2>সতর্কতা</h2><p class="note">এটি এক কম্পিউটারের ব্রাউজারে চলা প্রাথমিক সংস্করণ। Local Storage মুছে গেলে ডেটা হারাতে পারে। বহু কম্পিউটারে একসঙ্গে ব্যবহার, লগইন, ক্লাউড ব্যাকআপ ও আসল AI-এর জন্য সার্ভার/ডেটাবেস লাগবে। গ্রাহকের Aadhaar, OTP, পাসওয়ার্ড বা সংবেদনশীল নথি এখানে অপ্রয়োজনে সংরক্ষণ করবেন না।</p><button class="danger no-print" onclick="clearAll()">সব লোকাল ডেটা মুছুন</button></div>
+</section>
+<footer>AFRINA INTERNET CAFE · Local-first management tool</footer>
+</main>
+<script>
+const KEY='afrinaCafeManagement_v1';
+const DEFAULT={
+ settings:{shopName:'AFRINA INTERNET CAFE',owner:'ABU KALAM SHEIKH',phone:'8609550430',address:'BALI HATPARA, NOWDA, MURSHIDABAD - 741156',upi:'8609550430@ybl'},
+ customers:[],jobs:[],payments:[],expenses:[],qrData:''
+};
+let db=load();
+function load(){try{return {...structuredClone(DEFAULT),...JSON.parse(localStorage.getItem(KEY)||'{}')};}catch(e){return structuredClone(DEFAULT)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function money(n){return '₹'+(Number(n)||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function dateNow(){return new Date().toLocaleString('en-IN')}
+function msg(s){const n=document.getElementById('notice');n.textContent=s;setTimeout(()=>{if(n.textContent===s)n.textContent=''},3000)}
+function cust(id){return db.customers.find(c=>c.id===id)}
+function job(id){return db.jobs.find(j=>j.id===id)}
+function due(j){return Math.max(0,Number(j.total)-Number(j.paid))}
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));render()}));
+document.getElementById('customerForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target);db.customers.push({id:uid(),name:f.get('name').trim(),phone:f.get('phone').trim(),note:f.get('note').trim(),date:dateNow()});e.target.reset();save();msg('কাস্টমার সেভ হয়েছে')});
+document.getElementById('jobForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target),total=Number(f.get('total')),paid=Number(f.get('paid')||0);if(paid>total){msg('পেমেন্ট মোট চার্জের বেশি হতে পারবে না');return}const j={id:uid(),customerId:f.get('customerId'),title:f.get('title').trim(),total,paid,status:f.get('status'),note:f.get('note').trim(),date:dateNow()};db.jobs.push(j);if(paid>0)db.payments.push({id:uid(),jobId:j.id,amount:paid,method:'Initial payment',date:dateNow()});e.target.reset();save();msg('Job সেভ হয়েছে')});
+document.getElementById('paymentForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target),j=job(f.get('jobId')),amount=Number(f.get('amount'));if(!j){msg('Job নির্বাচন করুন');return}if(amount<=0||amount>due(j)){msg('পরিমাণ যাচাই করুন; বকেয়ার বেশি দেওয়া যাবে না');return}j.paid=Number(j.paid)+amount;db.payments.push({id:uid(),jobId:j.id,amount,method:f.get('method'),date:dateNow()});e.target.reset();save();msg('পেমেন্ট সেভ হয়েছে')});
+document.getElementById('expenseForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target);db.expenses.push({id:uid(),type:f.get('type'),description:f.get('description').trim(),amount:Number(f.get('amount')),date:dateNow()});e.target.reset();save();msg('হিসাব সেভ হয়েছে')});
+document.getElementById('settingsForm').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target);db.settings={shopName:f.get('shopName').trim(),owner:f.get('owner').trim(),phone:f.get('phone').trim(),address:f.get('address').trim(),upi:f.get('upi').trim()};save();msg('Settings সেভ হয়েছে')});
+document.getElementById('customerSearch').addEventListener('input',renderCustomers);
+document.getElementById('jobSearch').addEventListener('input',renderJobs);
+document.getElementById('qrFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{db.qrData=r.result;save();msg('QR ছবি সেভ হয়েছে')};r.readAsDataURL(file)});
+document.getElementById('importFile').addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.settings||!Array.isArray(x.jobs)||!Array.isArray(x.customers))throw Error();db={...structuredClone(DEFAULT),...x};save();msg('Backup Import হয়েছে')}catch(err){msg('Backup ফাইল সঠিক নয়')}};r.readAsText(file)});
+function render(){renderSettings();renderCustomers();renderJobs();renderPayments();renderExpenses();renderDashboard();renderQr()}
+function renderSettings(){const s=db.settings;document.getElementById('brandTitle').textContent=s.shopName;document.getElementById('brandSub').textContent=(s.owner?s.owner+' · ':'')+s.address;[['sName','shopName'],['sOwner','owner'],['sPhone','phone'],['sAddress','address'],['sUpi','upi']].forEach(([id,k])=>document.getElementById(id).value=s[k]||'');document.getElementById('upiLabel').textContent='UPI: '+(s.upi||'সেট করা হয়নি')}
+function renderCustomers(){const q=(document.getElementById('customerSearch').value||'').toLowerCase();document.getElementById('customerRows').innerHTML=db.customers.filter(c=>(c.name+' '+c.phone+' '+c.note).toLowerCase().includes(q)).map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.phone)}</td><td>${esc(c.note)}</td><td><button class="danger" onclick="delCustomer('${c.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="4">কোনো কাস্টমার নেই</td></tr>';document.getElementById('jobCustomer').innerHTML='<option value="">কাস্টমার বাছুন</option>'+db.customers.map(c=>`<option value="${c.id}">${esc(c.name)} — ${esc(c.phone)}</option>`).join('')}
+function renderJobs(){const q=(document.getElementById('jobSearch').value||'').toLowerCase();const rows=db.jobs.filter(j=>((cust(j.customerId)?.name||'')+' '+j.title+' '+j.status).toLowerCase().includes(q)).map(j=>`<tr><td>${esc(j.date)}</td><td>${esc(cust(j.customerId)?.name||'Deleted customer')}</td><td>${esc(j.title)}</td><td>${money(j.total)}</td><td>${money(j.paid)}</td><td>${money(due(j))}</td><td><select aria-label="Job status" onchange="setStatus('${j.id}',this.value)">${['Pending','Working','Completed','Delivered'].map(s=>`<option ${j.status===s?'selected':''}>${s}</option>`).join('')}</select></td><td><button onclick="receipt('${j.id}')">রসিদ</button> <button class="danger" onclick="delJob('${j.id}')">Delete</button></td></tr>`).join('');document.getElementById('jobRows').innerHTML=rows||'<tr><td colspan="8">কোনো Job নেই</td></tr>';document.getElementById('paymentJob').innerHTML='<option value="">বকেয়া Job নির্বাচন</option>'+db.jobs.filter(j=>due(j)>0).map(j=>`<option value="${j.id}">${esc(cust(j.customerId)?.name||'Customer')} · ${esc(j.title)} · Due ${money(due(j))}</option>`).join('')}
+function renderPayments(){document.getElementById('paymentRows').innerHTML=[...db.payments].reverse().map(p=>{const j=job(p.jobId);return `<tr><td>${esc(p.date)}</td><td>${esc(cust(j?.customerId)?.name||'—')}</td><td>${esc(j?.title||'Deleted job')}</td><td>${money(p.amount)}</td><td>${esc(p.method)}</td><td><button onclick="receipt('${p.jobId}')">রসিদ</button></td></tr>`}).join('')||'<tr><td colspan="6">পেমেন্ট রেকর্ড নেই</td></tr>'}
+function renderExpenses(){document.getElementById('expenseRows').innerHTML=[...db.expenses].reverse().map(x=>`<tr><td>${esc(x.date)}</td><td>${x.type==='income'?'আয়':'খরচ'}</td><td>${esc(x.description)}</td><td>${money(x.amount)}</td><td><button class="danger" onclick="delExpense('${x.id}')">Delete</button></td></tr>`).join('')||'<tr><td colspan="5">কোনো হিসাব নেই</td></tr>'}
+function renderDashboard(){document.getElementById('mCustomers').textContent=db.customers.length;document.getElementById('mJobs').textContent=db.jobs.length;const jobIncome=db.jobs.reduce((s,j)=>s+Number(j.paid),0),otherIncome=db.expenses.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0);document.getElementById('mIncome').textContent=money(jobIncome+otherIncome);document.getElementById('mDue').textContent=money(db.jobs.reduce((s,j)=>s+due(j),0));document.getElementById('recentJobs').innerHTML=[...db.jobs].reverse().slice(0,8).map(j=>`<tr><td>${esc(j.date)}</td><td>${esc(cust(j.customerId)?.name||'—')}</td><td>${esc(j.title)}</td><td><span class="badge">${esc(j.status)}</span></td><td>${money(due(j))}</td></tr>`).join('')||'<tr><td colspan="5">এখনও কোনো Job যোগ হয়নি</td></tr>'}
+function renderQr(){const img=document.getElementById('qrPreview');if(db.qrData){img.src=db.qrData;img.style.display='block'}else{img.src='QR.jpeg';img.style.display='block';img.onerror=()=>{img.style.display='none'}}}
+function setStatus(id,s){const j=job(id);if(j){j.status=s;save();msg('Job status আপডেট হয়েছে')}}
+function delCustomer(id){if(!confirm('এই কাস্টমার মুছবেন? সম্পর্কিত Job থাকবে।'))return;db.customers=db.customers.filter(c=>c.id!==id);save()}
+function delJob(id){if(!confirm('এই Job ও তার পেমেন্ট হিস্ট্রি মুছবেন?'))return;db.jobs=db.jobs.filter(j=>j.id!==id);db.payments=db.payments.filter(p=>p.jobId!==id);save()}
+function delExpense(id){if(!confirm('এই হিসাব মুছবেন?'))return;db.expenses=db.expenses.filter(x=>x.id!==id);save()}
+function receipt(id){const j=job(id);if(!j){msg('Job পাওয়া যায়নি');return}const s=db.settings,c=cust(j.customerId);const w=window.open('','_blank','width=700,height=750');if(!w){msg('Receipt খুলতে browser popup allow করুন');return}w.document.write(`<!doctype html><html lang="bn"><meta charset="utf-8"><title>Receipt</title><style>body{font-family:Arial,sans-serif;padding:25px;color:#17243a}.receipt{max-width:600px;margin:auto;border:1px solid #ccd6e5;padding:24px}h2{text-align:center}hr{border:0;border-top:1px dashed #999}table{width:100%;border-collapse:collapse}td{padding:8px;border-bottom:1px solid #ddd}.right{text-align:right}.muted{color:#555;font-size:13px}@media print{button{display:none}}</style><div class="receipt"><h2>${esc(s.shopName)}</h2><p style="text-align:center">${esc(s.address)}<br>Phone: ${esc(s.phone)}<br>Owner: ${esc(s.owner)}</p><hr><h3>Payment Receipt</h3><p>Receipt / Job ID: ${esc(j.id)}<br>Date: ${esc(j.date)}</p><p>Customer: ${esc(c?.name||'—')}<br>Phone: ${esc(c?.phone||'—')}</p><table><tr><td>Work</td><td class="right">${esc(j.title)}</td></tr><tr><td>Total Charge</td><td class="right">${money(j.total)}</td></tr><tr><td>Paid</td><td class="right">${money(j.paid)}</td></tr><tr><td><b>Due</b></td><td class="right"><b>${money(due(j))}</b></td></tr><tr><td>Status</td><td class="right">${esc(j.status)}</td></tr></table><p class="muted">UPI: ${esc(s.upi)}<br>Thank you.</p><button onclick="window.print()">Print / Save PDF</button></div></html>`);w.document.close()}
+function printPayments(){window.print()}
+function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='afrina-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href);msg('Backup ডাউনলোড শুরু হয়েছে')}
+function clearAll(){if(!confirm('সব কাস্টমার, Job, পেমেন্ট ও হিসাব স্থায়ীভাবে মুছবেন? আগে Backup নিন।'))return;db=structuredClone(DEFAULT);save();msg('লোকাল ডেটা মুছে দেওয়া হয়েছে')}
+function makePrompt(){const task=document.getElementById('aiTask').value,detail=document.getElementById('aiPrompt').value.trim();document.getElementById('aiResult').value=`You are a helpful assistant for AFRINA INTERNET CAFE, Nowda, Murshidabad. Help with: ${task}. Respond in clear Bengali unless English is requested. Ask for missing details instead of inventing facts. Protect personal data. Create a ready-to-edit draft based on this request:\n${detail||'[এখানে প্রয়োজনীয় তথ্য লিখুন]'}`;msg('AI Prompt তৈরি হয়েছে')}
+async function copyPrompt(){const t=document.getElementById('aiResult').value;if(!t){makePrompt()}try{await navigator.clipboard.writeText(document.getElementById('aiResult').value);msg('Prompt কপি হয়েছে')}catch(e){document.getElementById('aiResult').select();msg('Prompt সিলেক্ট হয়েছে; Ctrl+C চাপুন')}}
+render();
+</script>
+</body>
+</html>
